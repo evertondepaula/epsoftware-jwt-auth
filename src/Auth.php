@@ -16,15 +16,17 @@ class Auth
 
 	public function __construct()
 	{
-		$this->user = new Config::get('auth.providers.model')();
+		$userClass = Config::get('epsoftware-jwt-auth.providers.model');
+		$this->user = new $userClass();
 	}
 
-	public function authentication(array $credentials, $password = null )
+	public function authentication( array $credentials, $password = null )
 	{
 		$user = $this->user->where($credentials)->first();
 
-		if( $user && Hash::check( $password, $user->password) ) {
+		if( $user && Hash::check( $password['password'], $user->password) ) {
 			$this->token = JWT::encode($user)->getToken();
+			$this->user = $user;
 			return true;
         } else {
 			return false;
@@ -33,7 +35,7 @@ class Auth
 
 	public function getToken()
 	{
-		return $this->token;
+		return sprintf("%s %s", Config::get('epsoftware-jwt-auth.token.type'), $this->token);
 	}
 
 	public function authorization( Request $request )
@@ -45,7 +47,7 @@ class Auth
 			if ( JWT::authorizer($token) ) {
 				$field = JWT::getTokenUserField();
 				$this->user->where([
-					Config::get('auth.providers.field') => $field
+					Config::get('epsoftware-jwt-auth.providers.field') => $field
 				])->first();
 				return true;
 			}
@@ -63,6 +65,7 @@ class Auth
 	{
 		return str_replace('Bearer ', '', $token);
 	}
+
 
 	public function getUser()
 	{

@@ -4,13 +4,12 @@ namespace Epsoftware\Auth\Providers;
 
 use Epsoftware\Auth\Middlewares\MiddlewareAuth;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Config;
 use Epsoftware\Auth\Auth as Auth;
 use Epsoftware\Auth\JWT as JWT;
 
 class AuthServiceProvider extends ServiceProvider
 {
-	protected $config;
-
 	public function register()
 	{
 		$this->mergeConfigFrom(

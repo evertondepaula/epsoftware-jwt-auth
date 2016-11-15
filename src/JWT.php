@@ -6,6 +6,7 @@ use Epsoftware\Auth\Exceptions\AuthenticationException;
 use Illuminate\Support\Facades\Config;
 use Lcobucci\JWT\ValidationData;
 use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key;
 use DateInterval;
 use DateTime;
 
@@ -25,8 +26,8 @@ class JWT
     public function __construct() {
 
         $iat = new DateTime();
-        $minutesToExp = Config::get('auth.exp');
-        $validadeStart = Config::get('auth.nbf');
+        $minutesToExp = Config::get('epsoftware-jwt-auth.exp');
+        $validadeStart = Config::get('epsoftware-jwt-auth.nbf');
 
         $exp = $iat->add(new DateInterval("PT{$minutesToExp}M"));
         $nbf = $iat->add(new DateInterval("PT{$validadeStart}S"));
@@ -34,12 +35,12 @@ class JWT
         $this->IAT = $iat->getTimestamp();
         $this->EXP = $exp->getTimestamp();
         $this->NBF = $nbf->getTimestamp();
-        $this->SECRET = Config::get('auth.secret');
-        $this->ISS = Config::get('auth.iss');
-        $this->SUB = Config::get('auth.sub');
-        $this->AUD = Config::get('auth.aud');
-        $this->JTI = Config::get('auth.jti');
-        $this->FIELD = Config::get('auth.providers.field');
+        $this->SECRET = Config::get('epsoftware-jwt-auth.secret');
+        $this->ISS = Config::get('epsoftware-jwt-auth.iss');
+        $this->SUB = Config::get('epsoftware-jwt-auth.sub');
+        $this->AUD = explode( ',', Config::get('epsoftware-jwt-auth.aud') );
+        $this->JTI = Config::get('epsoftware-jwt-auth.jti');
+        $this->FIELD = Config::get('epsoftware-jwt-auth.providers.field');
 
         return $this;
     }
@@ -61,25 +62,35 @@ class JWT
         $config = new Configuration();
         //Default signer is HMAC SHA256
         $signer = $config->getSigner();
-        $this->TOKEN = $config->createBuilder()
-                // Configures the issuer (iss claim)
-                ->issuedBy($this->ISS)
-                //Configures the audience (aud claim)
-                ->canOnlyBeUsedBy($this->AUD)
-                //Configures the id (jti claim), replicating as a header item
-                ->identifiedBy($this->JTI, true)
-                //Configures the time that the token was issue (iat claim)
-                ->issuedAt($this->IAT)
-                //Configures the time that the token can be used (nbf claim)
-                ->canOnlyBeUsedAfter($this->NBF)
-                //Configures the expiration time of the token (exp claim)
-                ->expiresAt($this->EXP)
-                //Configures a new claim, called "uid"
-                ->with($this->FIELD, $user->{$this->FIELD})
-                //Creates a signature using "testing" as key
-                ->sign($signer, $this->SECRET)
-                //Retrieves the generated token
-                ->getToken();
+        //Create a key
+        $key = new Key($this->SECRET);
+
+        $token = $config->createBuilder();
+
+        //Generate a token
+        foreach ($this->AUD as $aud) {
+            //Configures the audience (aud claim)
+            $token->canOnlyBeUsedBy($aud);
+        }
+
+        // Configures the issuer (iss claim)
+        $this->TOKEN = $token->issuedBy($this->ISS)
+            //Configures the id (jti claim), replicating as a header item
+            ->identifiedBy($this->JTI, true)
+            //Configures the time that the token was issue (iat claim)
+            ->issuedAt($this->IAT)
+            //Configures the time that the token can be used (nbf claim)
+            ->canOnlyBeUsedAfter($this->NBF)
+            //Configures the expiration time of the token (exp claim)
+            ->expiresAt($this->EXP)
+            //Configures a new claim, called "uid"
+            ->with($this->FIELD, $user->{$this->FIELD})
+            //Creates a signature using "testing" as key
+            ->sign($signer, $key)
+            //Retrieves the generated token
+            ->getToken();
+
+        return $this;
     }
 
     public function validate( $token )
@@ -125,7 +136,7 @@ class JWT
 
     public function getToken()
     {
-        return $this->TOKEN;
+        return sprintf('%s', $this->TOKEN );
     }
 
     public function getTokenUserField()
