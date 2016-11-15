@@ -25,12 +25,13 @@ class JWT
 
     public function __construct() {
 
-        $iat = new DateTime();
         $minutesToExp = Config::get('epsoftware-jwt-auth.exp');
         $validadeStart = Config::get('epsoftware-jwt-auth.nbf');
-
-        $exp = $iat->add(new DateInterval("PT{$minutesToExp}M"));
-        $nbf = $iat->add(new DateInterval("PT{$validadeStart}S"));
+        $iat = new DateTime();
+        $exp = new DateTime();
+        $nbf = new DateTime();
+        $exp->add(new DateInterval("PT{$minutesToExp}M"));
+        $nbf->add(new DateInterval("PT{$validadeStart}S"));
 
         $this->IAT = $iat->getTimestamp();
         $this->EXP = $exp->getTimestamp();
@@ -93,13 +94,15 @@ class JWT
         return $this;
     }
 
-    public function validate( $token )
+    public function validate( )
     {
         try {
             //It will use the current time to validate (iat, nbf and exp)
             $data = new ValidationData();
             $data->setIssuer($this->ISS);
-            $data->setAudience($this->AUD);
+            foreach ($this->AUD as $aud) {
+                $data->setAudience($aud);
+            }
             $data->setId($this->JTI);
 
             return $this->TOKEN->validate($data);

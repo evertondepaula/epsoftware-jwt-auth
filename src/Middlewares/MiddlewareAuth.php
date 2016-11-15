@@ -1,6 +1,6 @@
 <?php
 
-namespace Epsoftware\Middlewares;
+namespace Epsoftware\Auth\Middlewares;
 
 use Closure;
 use Epsoftware\Auth\Facades\Auth;

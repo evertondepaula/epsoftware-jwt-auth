@@ -40,15 +40,16 @@ class Auth
 
 	public function authorization( Request $request )
 	{
-		if ( $token = $request->header('Authorization') ) {
+		if ( $this->token = $request->header('Authorization') ) {
 
-			$token = $this->traitToken($token);
+			$this->token = $this->traitToken($this->token);
 
-			if ( JWT::authorizer($token) ) {
+			if ( JWT::authorizer($this->token) ) {
 				$field = JWT::getTokenUserField();
-				$this->user->where([
+				$user = $this->user->where([
 					Config::get('epsoftware-jwt-auth.providers.field') => $field
 				])->first();
+				$this->user = $user;
 				return true;
 			}
 		}
