@@ -13,10 +13,12 @@ class Auth
 {
 	protected $user;
 	protected $token;
+	protected $tokenType;
 
 	public function __construct()
 	{
 		$userClass = Config::get('epsoftware-jwt-auth.providers.model');
+		$this->tokenType = Config::get('epsoftware-jwt-auth.token.type');
 		$this->user = new $userClass();
 	}
 
@@ -35,7 +37,7 @@ class Auth
 
 	public function getToken()
 	{
-		return sprintf("%s %s", Config::get('epsoftware-jwt-auth.token.type'), $this->token);
+		return sprintf("%s", $this->token);
 	}
 
 	public function authorization( Request $request )
@@ -64,7 +66,7 @@ class Auth
 
 	protected function traitToken($token)
 	{
-		return str_replace('Bearer ', '', $token);
+		return str_replace($this->tokenType, '', $token);
 	}
 
 
