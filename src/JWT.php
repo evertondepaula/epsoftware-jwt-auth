@@ -68,21 +68,21 @@ class JWT
         //Generate a token
         foreach ($this->AUD as $aud) {
             //Configures the audience (aud claim)
-            $builder->canOnlyBeUsedBy($aud);
+            $builder->setAudience($aud);
         }
 
         // Configures the issuer (iss claim)
-        $this->TOKEN = $builder->issuedBy($this->ISS)
+        $this->TOKEN = $builder->setIssuer($this->ISS)
             //Configures the id (jti claim), replicating as a header item
-            ->identifiedBy($this->JTI, true)
+            ->setId($this->JTI, true)
             //Configures the time that the token was issue (iat claim)
-            ->issuedAt($this->IAT)
+            ->setIssuedAt($this->IAT)
             //Configures the time that the token can be used (nbf claim)
-            ->canOnlyBeUsedAfter($this->NBF)
+            ->setNotBefore($this->NBF)
             //Configures the expiration time of the token (exp claim)
-            ->expiresAt($this->EXP)
+            ->setExpiration($this->EXP)
             //Configures a new claim, called "uid"
-            ->with($this->FIELD, $user->{$this->FIELD})
+            ->set($this->FIELD, $user->{$this->FIELD})
             //Creates a signature using "testing" as key
             ->sign($signer, $this->SECRET)
             //Retrieves the generated token
