@@ -4,9 +4,10 @@ namespace Epsoftware\Auth;
 
 use Epsoftware\Auth\Exceptions\AuthenticationException;
 use Illuminate\Support\Facades\Config;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\ValidationData;
-use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Parser;
 use DateInterval;
 use DateTime;
 
@@ -49,9 +50,9 @@ class JWT
     public function decode( $tokenString )
     {
         try {
-            $config = new Configuration();
+            $parser = new Parser();
             //Parses from a string
-            $this->TOKEN =  $config->getParser()->parse((string) $tokenString);
+            $this->TOKEN =  $parser->parse((string) $tokenString);
         } catch (AuthenticationException $e) {
             throw new AuthenticationException("Decode token error", 404);
         }
@@ -60,22 +61,18 @@ class JWT
     public function encode( $user )
     {
         //This object helps to simplify the creation of the dependencies
-        $config = new Configuration();
+        $builder = new Builder();
         //Default signer is HMAC SHA256
-        $signer = $config->getSigner();
-        //Create a key
-        $key = new Key($this->SECRET);
-
-        $token = $config->createBuilder();
+        $signer = new Sha256();
 
         //Generate a token
         foreach ($this->AUD as $aud) {
             //Configures the audience (aud claim)
-            $token->canOnlyBeUsedBy($aud);
+            $builder->canOnlyBeUsedBy($aud);
         }
 
         // Configures the issuer (iss claim)
-        $this->TOKEN = $token->issuedBy($this->ISS)
+        $this->TOKEN = $builder->issuedBy($this->ISS)
             //Configures the id (jti claim), replicating as a header item
             ->identifiedBy($this->JTI, true)
             //Configures the time that the token was issue (iat claim)
@@ -87,7 +84,7 @@ class JWT
             //Configures a new claim, called "uid"
             ->with($this->FIELD, $user->{$this->FIELD})
             //Creates a signature using "testing" as key
-            ->sign($signer, $key)
+            ->sign($signer, $this->SECRET)
             //Retrieves the generated token
             ->getToken();
 
@@ -117,9 +114,9 @@ class JWT
         try {
 
             // This object helps to simplify the creation of the dependencies
-            $config = new Configuration();
-            // Default signer is HMAC SHA256
-            $signer = $config->getSigner();
+            $builder = new Builder();
+            //Default signer is HMAC SHA256
+            $signer = new Sha256();
 
             return $this->TOKEN->verify($signer, $this->SECRET);
 
