@@ -3,6 +3,7 @@
 namespace Epsoftware\Auth\Middlewares;
 
 use Closure;
+use Epsoftware\Auth\Exceptions\AuthorizationException;
 use Epsoftware\Auth\Facades\Auth;
 
 class MiddlewareAuth
@@ -11,6 +12,6 @@ class MiddlewareAuth
     {
       if ( Auth::authorization($request) ) return $next( $request );
 
-		return Auth::failResponse('Unauthorized token');
+        throw new AuthorizationException('Unauthorized token', 401);
     }
 }
